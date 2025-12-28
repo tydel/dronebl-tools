@@ -1,0 +1,109 @@
+#!/usr/bin/env python
+# Copyright (c) 2008 William Pitcock
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+#      Redistributions of source code must retain the above copyright notice,
+#      this list of conditions and the following disclaimer.
+#
+#      Redistributions in binary form must reproduce the above copyright notice,
+#      this list of conditions and the following disclaimer in the documentation
+#      and/or other materials provided with the distribution.
+#
+#      Neither the name of the author nor the names of its contributors may be
+#      used to endorse or promote products derived from this software without
+#      specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+from datetime import datetime
+import getopt, sys
+import DroneBLClient
+
+def printf(format, *args): 
+	print str(format) % args,
+
+def report_error(err):
+	print "dronebl-query: " + err
+
+def version():
+	print """dronebl-tools v0.3
+Report bugs to <nenolod@dereferenced.org>"""
+
+def usage():
+	print """
+dronebl-query - query DroneBL for entries.
+
+Options:
+  -r, --rpckey=KEY		rpckey (required)
+  -i, --ip=ip			ip
+  -a, --show-archived		shows archived records
+  -v, --version			reports the version
+  -h, --help			displays this message
+
+Report bugs to <nenolod@dereferenced.org>"""
+
+def main():
+	_rpckey = ""
+	ip = []
+	filter_inactive = 1
+
+	try:
+		(opts, args) = getopt.getopt(sys.argv[1:], "r:i:vha", ["rpckey=", "ip=", "version", "help", "show-archived"])
+	except getopt.GetoptError, err:
+		report_error(str(err))
+		usage()
+		sys.exit(2)
+
+	for o, a in opts:
+		if o in ('-v', '--version'):
+			version()
+			sys.exit()
+		elif o in ('-h', '--help'):
+			usage()
+			sys.exit()
+		elif o in ('-r', '--rpckey'):
+			_rpckey = a
+		elif o in ('-i', '--ip'):
+			record = {}
+			record['ip'] = a
+			ip.append(record)
+		elif o in ('-a', '--show-archived'):
+			filter_inactive = 0
+
+	if _rpckey == "":
+		report_error("an rpckey is needed, see httsp://dronebl.org/rpckey_signup")
+		sys.exit(2)
+
+	client = DroneBLClient.Client(rpckey=_rpckey)
+
+	for record in ip:
+		client.lookupIP(record['ip'])
+
+	printf('%-24s %-6s %-6s %-6s %-16s %s\n', "Time", "ID", "Type", "Active", "IP", "Comment");
+	printf('%-24s %-6s %-6s %-6s %-16s %s\n', "========================", "======", "======", "======", "================", "=======");
+
+	yesno = ['NO', 'YES']
+	results = client.executeRequest()
+	for record in results:
+		if filter_inactive == 1 and record['listed'] == 0:
+			continue
+
+		printf('%-24s %-6d %-6d %-6s %-16s %s\n',
+			datetime.fromtimestamp(record['timestamp']).ctime(),
+			record['id'], record['type'], yesno[record['listed']], record['ip'], record['comment'])
+
+if __name__ == "__main__":
+	main()
