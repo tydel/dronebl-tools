@@ -12,9 +12,9 @@ python setup.py install
 ```
 
 # RPCkey Registration
-To use these tools, you need an RPC key. You can request one with this form.
+To use these tools, you need an RPC key. [You can request one with this form](https://dronebl.org/rpckey_signup).
 
 # Third party tools
-dronebl.rb Interface to the DroneBL RPC2 service written in ruby.
+[dronebl.rb](http://rubygems.org/gems/dronebl.rb] Interface) to the DroneBL RPC2 service written in ruby.
 
-dronereport PHP5 Cli tool.
+[dronereport](https://dronebl.org/downloads/dronereport) PHP5 Cli tool.
